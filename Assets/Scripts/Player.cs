@@ -33,6 +33,9 @@ public class Player : MonoBehaviour
 
     private Vector2 directionalInput;
 
+    // ***** particles when land in water *****
+    public GameObject splash;
+
     private int wallDirX;
     // ***** KEY COMBO *****
     private KeyCode[] sequence = new KeyCode[]{
@@ -41,26 +44,33 @@ public class Player : MonoBehaviour
     KeyCode.Space};
     private int sequenceIndex;
     // ***** Super Jump *****
+    private float timeLeft = 1.5f;
     private void HandleSuperJump()
     {
-
+        if (sequenceIndex != 0 && timeLeft > 0)
+        {
+            timeLeft -= Time.deltaTime;
+            Debug.Log(timeLeft);
+        }
         if (isSuperJumping)
         {
-            maxJumpVelocity /= 10;
+            maxJumpVelocity /= 6;
             isSuperJumping = false;
         }
         if (Input.GetKeyDown(sequence[sequenceIndex]))
         {
-            if (++sequenceIndex == sequence.Length)
+            if (++sequenceIndex == sequence.Length && timeLeft > 0)
             {
                 sequenceIndex = 0;
+                timeLeft = 1.5f;
                 isSuperJumping = true;
-                maxJumpVelocity *= 10;
+                maxJumpVelocity *= 6;
             }
         }
-        else if (Input.anyKeyDown)
+        else if (Input.anyKeyDown || timeLeft <= 0)
         {
             sequenceIndex = 0;
+            timeLeft = 1.5f;
         }
     }
 
@@ -78,6 +88,7 @@ public class Player : MonoBehaviour
             maxJumpVelocity /= 2;
             velocity.y /= 3;
             // m_SpriteRenderer.color = new Color (143F/255,114F/255,209F/255,1);
+            Instantiate(splash, transform.position, Quaternion.identity);
         }
 
     }
@@ -89,9 +100,12 @@ public class Player : MonoBehaviour
             gravity *= 10;
             moveSpeed *= 2;
             maxJumpVelocity *= 2;
+            Instantiate(splash, transform.position, Quaternion.identity);
         }
 
     }
+
+
 
     private void Start()
     {
@@ -114,6 +128,8 @@ public class Player : MonoBehaviour
             velocity.y = 0f;
         }
 
+
+
         moveInput = Input.GetAxis("Horizontal");
 
         HandleFlipSprite();
@@ -121,6 +137,7 @@ public class Player : MonoBehaviour
         HandleSuperJump();
 
     }
+
 
     public void SetDirectionalInput(Vector2 input)
     {
@@ -180,16 +197,19 @@ public class Player : MonoBehaviour
             {
                 anim.SetInteger("State", 0);
             }
+
         }
         if (Input.GetKeyDown(downButton))
         {
             anim.SetInteger("State", 5);
+            moveSpeed *= 0;
         }
-
-        if (Input.GetKeyUp(downButton))
+        else if (Input.GetKeyUp(downButton))
         {
             anim.SetInteger("State", 6);
+            moveSpeed = isSwimming ? 3f : 6f;
         }
+
     }
     void FlipSprite()
     {
@@ -214,7 +234,7 @@ public class Player : MonoBehaviour
     {
         Vector2 position = transform.position;
         Vector2 direction = Vector2.down;
-        float distance = 1.0f;
+        float distance = 0.2f;
 
         RaycastHit2D hit = Physics2D.Raycast(position, direction, distance, groundLayer);
         if (hit.collider != null)
