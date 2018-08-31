@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
         if (sequenceIndex != 0 && timeLeft > 0)
         {
             timeLeft -= Time.deltaTime;
-            Debug.Log(timeLeft);
+            // Debug.Log(timeLeft);
         }
         if (isSuperJumping)
         {
@@ -77,6 +77,8 @@ public class Player : MonoBehaviour
     Animator anim;
 
     SpriteRenderer m_SpriteRenderer;
+
+    TrailRenderer tr;
 
     void OnCollisionEnter2D(Collision2D coll)
     {
@@ -115,6 +117,8 @@ public class Player : MonoBehaviour
         minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
         anim = GetComponent<Animator>();
         m_SpriteRenderer = GetComponent<SpriteRenderer>();
+        tr = GetComponent<TrailRenderer>();
+        tr.sortingLayerName = "Character";
     }
 
     private void Update()
@@ -135,7 +139,6 @@ public class Player : MonoBehaviour
         HandleFlipSprite();
         HandleAnimationStates();
         HandleSuperJump();
-
     }
 
 
@@ -177,14 +180,16 @@ public class Player : MonoBehaviour
             if (velocity.y > 0 && !isDoubleJumping)
             {
                 anim.SetInteger("State", 3);
+
             }
             if (velocity.y > 0 && isDoubleJumping)
             {
                 anim.SetInteger("State", 4);
             }
-            if (velocity.y < 0 && !IsGrounded())
+            if (velocity.y <= 0 && !IsGrounded())
             {
                 anim.SetInteger("State", 1);
+                this.tr.enabled = false;
             }
         }
         if (controller.collisions.below)
@@ -193,7 +198,7 @@ public class Player : MonoBehaviour
             {
                 anim.SetInteger("State", 2);
             }
-            else
+            if (moveInput == 0 && !Input.GetKey(downButton))
             {
                 anim.SetInteger("State", 0);
             }
@@ -201,13 +206,20 @@ public class Player : MonoBehaviour
         }
         if (Input.GetKeyDown(downButton))
         {
-            anim.SetInteger("State", 5);
-            moveSpeed *= 0;
+            if (IsGrounded())
+            {
+                anim.SetInteger("State", 5);
+                moveSpeed *= 0;
+            }
         }
         else if (Input.GetKeyUp(downButton))
         {
             anim.SetInteger("State", 6);
             moveSpeed = isSwimming ? 3f : 6f;
+        }
+        if (isSuperJumping)
+        {
+            this.tr.enabled = true;
         }
 
     }
@@ -234,7 +246,7 @@ public class Player : MonoBehaviour
     {
         Vector2 position = transform.position;
         Vector2 direction = Vector2.down;
-        float distance = 0.2f;
+        float distance = 0.5f;
 
         RaycastHit2D hit = Physics2D.Raycast(position, direction, distance, groundLayer);
         if (hit.collider != null)
